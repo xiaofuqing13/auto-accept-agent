@@ -698,7 +698,8 @@
     function isAcceptButton(el) {
         const text = (el.textContent || "").trim().toLowerCase();
         if (text.length === 0 || text.length > 50) return false;
-        const patterns = ['run'];
+        const state = window.__autoAcceptState;
+        const patterns = state.acceptPatterns || ['run'];
         const rejects = ['skip', 'reject', 'cancel', 'close', 'refine'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
@@ -1401,6 +1402,7 @@
             state.isBackgroundMode = isBG;
             state.autoAcceptFileEdits = config.autoAcceptFileEdits !== false; // Default to true
             state.overlayMode = config.overlayMode || 'none';
+            state.acceptPatterns = config.acceptPatterns || ['run'];
             state.lastStartTime = Date.now();
             state.sessionID++;
             const sid = state.sessionID;

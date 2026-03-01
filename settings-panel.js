@@ -101,6 +101,16 @@ class SettingsPanel {
                         const overlayConfig = vscode.workspace.getConfiguration('autoAccept');
                         await overlayConfig.update('overlayMode', message.value, vscode.ConfigurationTarget.Global);
                         break;
+                    case 'getAcceptPatterns':
+                        const currentPatterns = await vscode.commands.executeCommand('auto-accept.getAcceptPatterns');
+                        this.panel.webview.postMessage({
+                            command: 'updateAcceptPatterns',
+                            patterns: currentPatterns || ['run']
+                        });
+                        break;
+                    case 'setAcceptPatterns':
+                        await vscode.commands.executeCommand('auto-accept.updateAcceptPatterns', message.patterns);
+                        break;
                     case 'setCdpPort':
                         const config = vscode.workspace.getConfiguration('autoAccept');
                         await config.update('cdpPort', message.value, vscode.ConfigurationTarget.Global);
@@ -604,6 +614,37 @@ class SettingsPanel {
                 </div>
 
                 <div class="section">
+                    <div class="section-label">⚙️ ${Loc.t('Auto Accept Actions')}</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
+                        ${Loc.t('Select which button types to auto-accept. Unchecked types will be ignored.')}
+                    </div>
+                    <div id="acceptPatternsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        ${[
+                { value: 'run', label: 'Run' },
+                { value: 'run command', label: 'Run Command' },
+                { value: 'run code', label: 'Run Code' },
+                { value: 'run cell', label: 'Run Cell' },
+                { value: 'run all', label: 'Run All' },
+                { value: 'run test', label: 'Run Test' },
+                { value: 'accept', label: 'Accept' },
+                { value: 'accept all', label: 'Accept All' },
+                { value: 'retry', label: 'Retry' },
+                { value: 'apply', label: 'Apply' },
+                { value: 'execute', label: 'Execute' },
+                { value: 'resume', label: 'Resume' },
+                { value: 'confirm', label: 'Confirm' },
+                { value: 'allow once', label: 'Allow Once' }
+            ].map(p => `
+                            <label style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                                <input type="checkbox" value="${p.value}" class="accept-pattern-cb" style="accent-color:var(--accent); width:16px; height:16px; cursor:pointer;">
+                                <span>${p.label}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div id="acceptPatternsStatus" style="font-size: 12px; margin-top: 12px; text-align: center; height: 18px;"></div>
+                </div>
+
+                <div class="section">
                     <div class="section-label">🖥️ ${Loc.t('Background Overlay')}</div>
                     <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
                         ${Loc.t('Controls overlay display when background mode is active.')}
@@ -789,6 +830,38 @@ class SettingsPanel {
                     const msg = e.data;
                     if (msg.command === 'updateOverlayMode' && overlayModeSelect) {
                         overlayModeSelect.value = msg.overlayMode;
+                    }
+                });
+
+                // --- Accept Patterns Handler ---
+                vscode.postMessage({ command: 'getAcceptPatterns' });
+
+                const patternCheckboxes = document.querySelectorAll('.accept-pattern-cb');
+                const acceptPatternsStatus = document.getElementById('acceptPatternsStatus');
+
+                patternCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        const selected = Array.from(patternCheckboxes).filter(c => c.checked).map(c => c.value);
+                        if (selected.length === 0) {
+                            acceptPatternsStatus.innerText = '${Loc.t('⚠ At least one pattern required')}';
+                            acceptPatternsStatus.style.color = 'orange';
+                            cb.checked = true;
+                            return;
+                        }
+                        vscode.postMessage({ command: 'setAcceptPatterns', patterns: selected });
+                        acceptPatternsStatus.innerText = '${Loc.t('✓ Patterns Updated')}';
+                        acceptPatternsStatus.style.color = 'var(--green)';
+                        setTimeout(() => { acceptPatternsStatus.innerText = ''; }, 3000);
+                    });
+                });
+
+                window.addEventListener('message', e => {
+                    const msg = e.data;
+                    if (msg.command === 'updateAcceptPatterns') {
+                        const patterns = msg.patterns || ['run'];
+                        patternCheckboxes.forEach(cb => {
+                            cb.checked = patterns.includes(cb.value);
+                        });
                     }
                 });
             </script>

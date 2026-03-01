@@ -28,17 +28,10 @@ export function autoAccept(buttons) {
 
 // basic sanity checks before clicking
 function isAcceptButton(el) {
-    // define the types that are supported
-    const ACCEPT_PATTERNS = [
-        { pattern: 'run command', exact: false },
-        { pattern: 'run', exact: false },
-        { pattern: 'run code', exact: false },
-        { pattern: 'run cell', exact: false },
-        { pattern: 'run all', exact: false },
-        { pattern: 'run selection', exact: false },
-        { pattern: 'run and debug', exact: false },
-        { pattern: 'run test', exact: false }
-    ];
+    // Use configurable patterns from state, fallback to default
+    const state = window.__autoAcceptState || {};
+    const configuredPatterns = state.acceptPatterns || ['run'];
+    const ACCEPT_PATTERNS = configuredPatterns.map(p => ({ pattern: p, exact: false }));
 
     // define the types that are not targetted
     const REJECT_PATTERNS = ['skip', 'reject', 'cancel', 'discard', 'deny', 'close', 'refine', 'other'];

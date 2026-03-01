@@ -44,6 +44,7 @@ let isPro = false;
 let isLockedOut = false; // Local tracking
 let pollFrequency = 2000; // Default for Free
 let bannedCommands = []; // List of command patterns to block
+let acceptPatterns = ['run']; // List of accept patterns (default: run only)
 
 // Background Mode state
 let backgroundModeEnabled = false;
@@ -188,6 +189,9 @@ async function activate(context) {
         ];
         bannedCommands = context.globalState.get(BANNED_COMMANDS_KEY, defaultBannedCommands);
 
+        // Load accept patterns (default: run only)
+        acceptPatterns = context.globalState.get('auto-accept-accept-patterns', ['run']);
+
 
         // 1.5 Verify License Background Check (skip if localVipOverride is enabled)
         if (!localVipOverride) {
@@ -262,6 +266,13 @@ async function activate(context) {
             vscode.commands.registerCommand('auto-accept.toggleBackground', () => handleBackgroundToggle(context)),
             vscode.commands.registerCommand('auto-accept.updateBannedCommands', (commands) => handleBannedCommandsUpdate(context, commands)),
             vscode.commands.registerCommand('auto-accept.getBannedCommands', () => bannedCommands),
+            vscode.commands.registerCommand('auto-accept.updateAcceptPatterns', async (patterns) => {
+                acceptPatterns = Array.isArray(patterns) ? patterns : ['run'];
+                await context.globalState.update('auto-accept-accept-patterns', acceptPatterns);
+                log(`Accept patterns updated: ${acceptPatterns.join(', ')}`);
+                if (isRunning) { syncSessions().catch(() => { }); }
+            }),
+            vscode.commands.registerCommand('auto-accept.getAcceptPatterns', () => acceptPatterns),
             vscode.commands.registerCommand('auto-accept.getROIStats', async () => {
                 const stats = await loadROIStats(context);
                 const timeSavedSeconds = stats.clicksThisWeek * SECONDS_PER_CLICK;
@@ -570,7 +581,8 @@ async function syncSessions() {
                 ide: currentIDE,
                 bannedCommands: bannedCommands,
                 autoAcceptFileEdits: autoAcceptFileEdits,
-                overlayMode: overlayMode
+                overlayMode: overlayMode,
+                acceptPatterns: acceptPatterns
             });
         } catch (err) {
             log(`CDP: Sync error: ${err.message}`);

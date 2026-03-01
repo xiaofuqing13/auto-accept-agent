@@ -186,6 +186,16 @@ var require_settings_panel = __commonJS({
                 const overlayConfig = vscode2.workspace.getConfiguration("autoAccept");
                 await overlayConfig.update("overlayMode", message.value, vscode2.ConfigurationTarget.Global);
                 break;
+              case "getAcceptPatterns":
+                const currentPatterns = await vscode2.commands.executeCommand("auto-accept.getAcceptPatterns");
+                this.panel.webview.postMessage({
+                  command: "updateAcceptPatterns",
+                  patterns: currentPatterns || ["run"]
+                });
+                break;
+              case "setAcceptPatterns":
+                await vscode2.commands.executeCommand("auto-accept.updateAcceptPatterns", message.patterns);
+                break;
               case "setCdpPort":
                 const config = vscode2.workspace.getConfiguration("autoAccept");
                 await config.update("cdpPort", message.value, vscode2.ConfigurationTarget.Global);
@@ -662,6 +672,37 @@ var require_settings_panel = __commonJS({
                 </div>
 
                 <div class="section">
+                    <div class="section-label">\u2699\uFE0F ${Loc2.t("Auto Accept Actions")}</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
+                        ${Loc2.t("Select which button types to auto-accept. Unchecked types will be ignored.")}
+                    </div>
+                    <div id="acceptPatternsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        ${[
+          { value: "run", label: "Run" },
+          { value: "run command", label: "Run Command" },
+          { value: "run code", label: "Run Code" },
+          { value: "run cell", label: "Run Cell" },
+          { value: "run all", label: "Run All" },
+          { value: "run test", label: "Run Test" },
+          { value: "accept", label: "Accept" },
+          { value: "accept all", label: "Accept All" },
+          { value: "retry", label: "Retry" },
+          { value: "apply", label: "Apply" },
+          { value: "execute", label: "Execute" },
+          { value: "resume", label: "Resume" },
+          { value: "confirm", label: "Confirm" },
+          { value: "allow once", label: "Allow Once" }
+        ].map((p) => `
+                            <label style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                                <input type="checkbox" value="${p.value}" class="accept-pattern-cb" style="accent-color:var(--accent); width:16px; height:16px; cursor:pointer;">
+                                <span>${p.label}</span>
+                            </label>
+                        `).join("")}
+                    </div>
+                    <div id="acceptPatternsStatus" style="font-size: 12px; margin-top: 12px; text-align: center; height: 18px;"></div>
+                </div>
+
+                <div class="section">
                     <div class="section-label">\u{1F5A5}\uFE0F ${Loc2.t("Background Overlay")}</div>
                     <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
                         ${Loc2.t("Controls overlay display when background mode is active.")}
@@ -847,6 +888,38 @@ var require_settings_panel = __commonJS({
                     const msg = e.data;
                     if (msg.command === 'updateOverlayMode' && overlayModeSelect) {
                         overlayModeSelect.value = msg.overlayMode;
+                    }
+                });
+
+                // --- Accept Patterns Handler ---
+                vscode.postMessage({ command: 'getAcceptPatterns' });
+
+                const patternCheckboxes = document.querySelectorAll('.accept-pattern-cb');
+                const acceptPatternsStatus = document.getElementById('acceptPatternsStatus');
+
+                patternCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        const selected = Array.from(patternCheckboxes).filter(c => c.checked).map(c => c.value);
+                        if (selected.length === 0) {
+                            acceptPatternsStatus.innerText = '${Loc2.t("\u26A0 At least one pattern required")}';
+                            acceptPatternsStatus.style.color = 'orange';
+                            cb.checked = true;
+                            return;
+                        }
+                        vscode.postMessage({ command: 'setAcceptPatterns', patterns: selected });
+                        acceptPatternsStatus.innerText = '${Loc2.t("\u2713 Patterns Updated")}';
+                        acceptPatternsStatus.style.color = 'var(--green)';
+                        setTimeout(() => { acceptPatternsStatus.innerText = ''; }, 3000);
+                    });
+                });
+
+                window.addEventListener('message', e => {
+                    const msg = e.data;
+                    if (msg.command === 'updateAcceptPatterns') {
+                        const patterns = msg.patterns || ['run'];
+                        patternCheckboxes.forEach(cb => {
+                            cb.checked = patterns.includes(cb.value);
+                        });
                     }
                 });
             </script>
@@ -5410,6 +5483,7 @@ var isPro = false;
 var isLockedOut = false;
 var pollFrequency = 2e3;
 var bannedCommands = [];
+var acceptPatterns = ["run"];
 var backgroundModeEnabled = false;
 var BACKGROUND_DONT_SHOW_KEY = "auto-accept-background-dont-show";
 var BACKGROUND_MODE_KEY = "auto-accept-background-mode";
@@ -5515,6 +5589,7 @@ async function activate(context) {
       "chmod -R 777 /"
     ];
     bannedCommands = context.globalState.get(BANNED_COMMANDS_KEY, defaultBannedCommands);
+    acceptPatterns = context.globalState.get("auto-accept-accept-patterns", ["run"]);
     if (!localVipOverride) {
       verifyLicense(context).then((isValid) => {
         if (isPro !== isValid) {
@@ -5566,6 +5641,16 @@ async function activate(context) {
       vscode.commands.registerCommand("auto-accept.toggleBackground", () => handleBackgroundToggle(context)),
       vscode.commands.registerCommand("auto-accept.updateBannedCommands", (commands) => handleBannedCommandsUpdate(context, commands)),
       vscode.commands.registerCommand("auto-accept.getBannedCommands", () => bannedCommands),
+      vscode.commands.registerCommand("auto-accept.updateAcceptPatterns", async (patterns) => {
+        acceptPatterns = Array.isArray(patterns) ? patterns : ["run"];
+        await context.globalState.update("auto-accept-accept-patterns", acceptPatterns);
+        log(`Accept patterns updated: ${acceptPatterns.join(", ")}`);
+        if (isRunning) {
+          syncSessions().catch(() => {
+          });
+        }
+      }),
+      vscode.commands.registerCommand("auto-accept.getAcceptPatterns", () => acceptPatterns),
       vscode.commands.registerCommand("auto-accept.getROIStats", async () => {
         const stats = await loadROIStats(context);
         const timeSavedSeconds = stats.clicksThisWeek * SECONDS_PER_CLICK;
@@ -5802,7 +5887,8 @@ async function syncSessions() {
         ide: currentIDE,
         bannedCommands,
         autoAcceptFileEdits,
-        overlayMode
+        overlayMode,
+        acceptPatterns
       });
     } catch (err) {
       log(`CDP: Sync error: ${err.message}`);

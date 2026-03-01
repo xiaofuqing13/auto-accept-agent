@@ -259,7 +259,7 @@
     function isAcceptButton(el) {
         const text = (el.textContent || "").trim().toLowerCase();
         if (text.length === 0 || text.length > 50) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute'];
+        const patterns = ['run'];
         const rejects = ['skip', 'reject', 'cancel', 'close', 'refine'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
