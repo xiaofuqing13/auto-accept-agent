@@ -1,8 +1,8 @@
 {
-    "name": "auto-accept-agent",
+    "name": "auto-accept-agent-custom",
     "displayName": "%ext.displayName%",
     "description": "%ext.description%",
-    "version": "8.9.16",
+    "version": "8.9.16-custom",
     "publisher": "MichelB",
     "icon": "media/icon.png",
     "extensionKind": [
@@ -51,7 +51,7 @@
             }
         ],
         "configuration": {
-            "title": "Auto Accept Agent",
+            "title": "Auto Accept Agent (Custom)",
             "properties": {
                 "autoAccept.cdpPort": {
                     "type": [
