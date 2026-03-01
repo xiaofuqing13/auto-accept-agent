@@ -2,34 +2,31 @@
 
 **English** | [中文](README.md)
 
-> A VS Code / Antigravity / Cursor extension that automatically accepts AI agent actions, freeing you from constant manual approvals.
+A VS Code / Antigravity / Cursor extension that auto-accepts AI agent actions, so you don't have to click approve every few seconds.
 
 ---
 
-## ✨ Features
+## Features
 
-- **Auto Accept Actions** — Supports 14 action types including file edits, terminal commands, retries, etc.
-- **Configurable Actions** — Select which actions to auto-accept via the settings panel
-- **Background Mode** — Manage multiple AI conversation tabs simultaneously
-- **Dangerous Command Blocking** — Built-in protection against destructive commands like `rm -rf /`
-- **Real-time Status** — Status bar color indicators (purple = running, green = complete)
-- **Smart Port Detection** — Auto-scans CDP debugging ports, no manual config needed
-- **Multi-language** — Auto-detects IDE language, supports English and Simplified Chinese
+- Auto-accept 14 action types: file edits, terminal commands, retries, etc.
+- Configurable — pick which actions to auto-accept in the settings panel
+- Background mode for managing multiple conversation tabs at once
+- Built-in dangerous command blocking (e.g. `rm -rf /`)
+- Status bar indicator for real-time state
+- Auto-detects CDP debugging port
+- English and Simplified Chinese support
 
-## 📦 Installation
+## Installation
 
-1. Download the latest `.vsix` file
-2. Open VS Code / Antigravity / Cursor
-3. `Ctrl+Shift+P` → type `Install from VSIX`
-4. Select the `.vsix` file and restart IDE
+1. Download the `.vsix` file
+2. Open your IDE, press `Ctrl+Shift+P`, type `Install from VSIX`
+3. Select the file and restart
 
-## 🚀 Usage
+## Usage
 
-1. Click `Auto Accept: OFF` in the status bar to enable
-2. Allow the one-time shortcut update (adds `--remote-debugging-port=9000`)
-3. Once enabled, it runs automatically — status bar shows `Auto Accept: ON`
+Click `Auto Accept: OFF` in the status bar to enable. On first use, allow the shortcut update (adds `--remote-debugging-port=9000`). After that it runs on its own.
 
-## ⚙️ Configuration
+## Configuration
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -37,15 +34,12 @@
 | Auto Accept File Edits | Auto-apply file changes | Enabled |
 | Language Override | Force UI language | Auto |
 | Overlay Mode | Background mode display | Disabled |
-| Action Types | Select actions to auto-accept | Run only |
+| Action Types | Which actions to auto-accept | Run only |
 
-## 🖥️ Compatibility
+## Compatibility
 
-- ✅ VS Code / Antigravity / Cursor
-- ✅ Windows / macOS / Linux
-- ✅ Multiple windows / instances
-- ✅ Minimized / unfocused
+Works with VS Code, Antigravity, and Cursor on Windows, macOS, and Linux. Supports multiple windows, multiple instances, and works fine when minimized or unfocused.
 
-## 📄 License
+## License
 
 [MIT](LICENSE.md)
