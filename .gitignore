@@ -1,0 +1,6 @@
+.env
+*.vsix
+# WindsurfChatOpen
+.windsurfchatopen/
+.windsurfrules
+.disabledrules
