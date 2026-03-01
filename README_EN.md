@@ -1,139 +1,51 @@
-# Auto Accept for Antigravity
+# Auto Accept Agent
 
 **English** | [中文](README.md)
 
-## Run 3 AI agents in parallel. Zero babysitting.
-
-Stop watching tabs. Auto Accept keeps every Antigravity conversation moving — accepting file edits, terminal commands, and recovery prompts automatically.
+> A VS Code / Antigravity / Cursor extension that automatically accepts AI agent actions, freeing you from constant manual approvals.
 
 ---
 
-![background mode](https://raw.githubusercontent.com/MunKhin/auto-accept-agent/master/media/background-mode.png)
+## ✨ Features
 
----
+- **Auto Accept Actions** — Supports 14 action types including file edits, terminal commands, retries, etc.
+- **Configurable Actions** — Select which actions to auto-accept via the settings panel
+- **Background Mode** — Manage multiple AI conversation tabs simultaneously
+- **Dangerous Command Blocking** — Built-in protection against destructive commands like `rm -rf /`
+- **Real-time Status** — Status bar color indicators (purple = running, green = complete)
+- **Smart Port Detection** — Auto-scans CDP debugging ports, no manual config needed
+- **Multi-language** — Auto-detects IDE language, supports English and Simplified Chinese
 
-## Why Auto Accept?
+## 📦 Installation
 
-Antigravity's multi-agent workflow is powerful, but it stops every time the agent needs approval. 
+1. Download the latest `.vsix` file
+2. Open VS Code / Antigravity / Cursor
+3. `Ctrl+Shift+P` → type `Install from VSIX`
+4. Select the `.vsix` file and restart IDE
 
-**That's dozens of interruptions per hour.**
+## 🚀 Usage
 
-Auto Accept eliminates the wait:
-- ✅ **File edits** — Auto-applied
-- ✅ **Terminal commands** — Auto-executed
-- ✅ **Retry prompts** — Auto-confirmed
-- ✅ **Stuck agents** — Auto-recovered
+1. Click `Auto Accept: OFF` in the status bar to enable
+2. Allow the one-time shortcut update (adds `--remote-debugging-port=9000`)
+3. Once enabled, it runs automatically — status bar shows `Auto Accept: ON`
 
----
+## ⚙️ Configuration
 
-## Features
+| Setting | Description | Default |
+|---------|-------------|---------|
+| CDP Port | Debug protocol port | Auto-detect |
+| Auto Accept File Edits | Auto-apply file changes | Enabled |
+| Language Override | Force UI language | Auto |
+| Overlay Mode | Background mode display | Disabled |
+| Action Types | Select actions to auto-accept | Run only |
 
-### Background Mode (Pro)
-Run multiple Antigravity tabs simultaneously. Every conversation auto-accepts in the background — no tab-switching required.
+## 🖥️ Compatibility
 
-### Dangerous Command Blocking
-Built-in protection against destructive commands like `rm -rf /`. Pro users can customize the blocklist.
+- ✅ VS Code / Antigravity / Cursor
+- ✅ Windows / macOS / Linux
+- ✅ Multiple windows / instances
+- ✅ Minimized / unfocused
 
-### Real-time Status Overlay
-Visual indicators show conversation state:
-- **Purple** — In progress, actively polling
-- **Green** — Task completed
+## 📄 License
 
-### Works Everywhere
-- ✅ Antigravity
-- ✅ Cursor
-- ✅ Multiple windows
-- ✅ Minimized/unfocused
-- ✅ Multi-instance (Smart Port Detection)
-
-### Internationalization
-- 🇺🇸 **English** (Default)
-- 🇨🇳 **Simplified Chinese** (简体中文)
-
-Auto-detects IDE language. Force specific language via `Auto Accept: Language Override` setting.
-
----
-
-## Quick Start
-
-1. **Install** the extension
-2. **Click** `Auto Accept: OFF` in the status bar
-3. **Allow** the one-time shortcut update if prompted
-4. **Done** — Auto Accept activates automatically
-
-The extension runs silently. Check the status bar for `Auto Accept: ON`.
-
----
-
-## Pro Features
-
-| Feature | Free | Pro |
-|---------|------|-----|
-| Auto-accept in active tab | ✅ | ✅ |
-| Background mode (all tabs) | — | ✅ |
-| Custom banned commands | — | ✅ |
-| Adjustable polling speed | — | ✅ |
-| Stuck agent recovery | — | ✅ |
-| Stuck agent recovery | — | ✅ |
-| Multi-window support | — | ✅ |
-| Smart Port Detection | ✅ | ✅ |
-
-
----
-
-## Troubleshooting
-
-### "Could not configure automatically" Error
-
-**Symptom**: When clicking `Auto Accept: OFF`, you see:
-```
-Auto Accept: Could not configure automatically. Please add --remote-debugging-port=9000 to your Antigravity shortcut manually, then restart.
-```
-
-**Causes**:
-1. The shortcut is not in a standard location (Desktop, Start Menu, Taskbar)
-2. No write permission to the shortcut file
-3. IDE was installed via non-standard method (portable, custom path)
-4. Custom-named shortcuts that don't match the IDE executable
-
-**Manual Fix**:
-
-#### Windows
-1. Find your IDE shortcut (Desktop or Start Menu)
-2. Right-click → **Properties**
-3. In the **Target** field, add `--remote-debugging-port=9000` after the `.exe` path:
-   ```
-   "C:\...\Antigravity.exe" --remote-debugging-port=9000
-   ```
-4. Click **OK** and restart the IDE
-
-#### macOS
-Launch your IDE from the terminal with the debug flag:
-```bash
-# For Antigravity
-open -a "Antigravity.app" --args --remote-debugging-port=9000
-
-# For Cursor
-open -a "Cursor.app" --args --remote-debugging-port=9000
-```
-*Tip: You can create an alias in your `.zshrc`: `alias antigravity='open -a "Antigravity" --args --remote-debugging-port=9000'`*
-
-#### Linux
-Edit your URL/Desktop entry (usually in `/usr/share/applications` or `~/.local/share/applications`):
-1. Open the `.desktop` file (e.g., `antigravity.desktop`)
-2. Find the `Exec=` line
-3. Append `--remote-debugging-port=9000` to the end
-4. Save and relaunch
-
----
-
-## Requirements
-
-- Antigravity or Cursor IDE
-- One-time relaunch after install
-
----
-
-## License
-
-MIT
+[MIT](LICENSE.md)
