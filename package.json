@@ -80,6 +80,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "%config.autoAcceptFileEdits.description%"
+                },
+                "autoAccept.overlayMode": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "panel",
+                        "minimal"
+                    ],
+                    "default": "none",
+                    "description": "%config.overlayMode.description%"
                 }
             }
         }

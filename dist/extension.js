@@ -175,6 +175,17 @@ var require_settings_panel = __commonJS({
               case "getCdpPortInfo":
                 this.sendCdpPortInfo();
                 break;
+              case "getOverlayMode":
+                const overlayReadConfig = vscode2.workspace.getConfiguration("autoAccept");
+                this.panel.webview.postMessage({
+                  command: "updateOverlayMode",
+                  overlayMode: overlayReadConfig.get("overlayMode", "none")
+                });
+                break;
+              case "setOverlayMode":
+                const overlayConfig = vscode2.workspace.getConfiguration("autoAccept");
+                await overlayConfig.update("overlayMode", message.value, vscode2.ConfigurationTarget.Global);
+                break;
               case "setCdpPort":
                 const config = vscode2.workspace.getConfiguration("autoAccept");
                 await config.update("cdpPort", message.value, vscode2.ConfigurationTarget.Global);
@@ -651,6 +662,18 @@ var require_settings_panel = __commonJS({
                 </div>
 
                 <div class="section">
+                    <div class="section-label">\u{1F5A5}\uFE0F ${Loc2.t("Background Overlay")}</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
+                        ${Loc2.t("Controls overlay display when background mode is active.")}
+                    </div>
+                    <select id="overlayModeSelect" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--fg); font-size: 13px; outline: none; cursor: pointer;">
+                        <option value="none">${Loc2.t("Disabled - No overlay")}</option>
+                        <option value="panel">${Loc2.t("Panel Only - Side panel overlay")}</option>
+                        <option value="minimal">${Loc2.t("Minimal - Bottom indicator")}</option>
+                    </select>
+                </div>
+
+                <div class="section">
                     <div class="section-label">\u{1F6E1}\uFE0F ${Loc2.t("Safety Rules")}</div>
                     <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
                         ${Loc2.t("Patterns that will NEVER be auto-accepted.")}
@@ -810,6 +833,22 @@ var require_settings_panel = __commonJS({
                 refreshStats();
                 vscode.postMessage({ command: 'getBannedCommands' });
                 vscode.postMessage({ command: 'getCdpPortInfo' });
+                vscode.postMessage({ command: 'getOverlayMode' });
+
+                // --- Overlay Mode Handler ---
+                const overlayModeSelect = document.getElementById('overlayModeSelect');
+                if (overlayModeSelect) {
+                    overlayModeSelect.addEventListener('change', (e) => {
+                        vscode.postMessage({ command: 'setOverlayMode', value: e.target.value });
+                    });
+                }
+
+                window.addEventListener('message', e => {
+                    const msg = e.data;
+                    if (msg.command === 'updateOverlayMode' && overlayModeSelect) {
+                        overlayModeSelect.value = msg.overlayMode;
+                    }
+                });
             </script>
         </body>
         </html>`;
@@ -5755,13 +5794,15 @@ async function syncSessions() {
     try {
       const config = vscode.workspace.getConfiguration("autoAccept");
       const autoAcceptFileEdits = config.get("autoAcceptFileEdits", true);
+      const overlayMode = config.get("overlayMode", "none");
       await cdpHandler.start({
         isPro,
         isBackgroundMode: backgroundModeEnabled,
         pollInterval: pollFrequency,
         ide: currentIDE,
         bannedCommands,
-        autoAcceptFileEdits
+        autoAcceptFileEdits,
+        overlayMode
       });
     } catch (err) {
       log(`CDP: Sync error: ${err.message}`);

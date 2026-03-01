@@ -7,5 +7,6 @@
     "config.cdpPort.description": "Chrome DevTools Protocol 端口。设置为 null 时会自动从父进程检测 --remote-debugging-port，如果检测失败则扫描 8997-9003 端口范围。",
     "config.localVipOverride.description": "本地强制 VIP 模式（测试用）。开启后跳过在线许可证验证。",
     "config.languageOverride.description": "覆盖语言设置（测试用）。需要重启生效。",
-    "config.autoAcceptFileEdits.description": "自动接受文件更改（'Accept All' 按钮）。禁用后需手动审查代码更改。"
+    "config.autoAcceptFileEdits.description": "自动接受文件更改（'Accept All' 按钮）。禁用后需手动审查代码更改。",
+    "config.overlayMode.description": "后台模式覆盖层显示方式：'none' = 禁用，'panel' = 仅侧边栏，'minimal' = 底部小提示。"
 }

@@ -316,13 +316,21 @@
 
     // Called ONCE when background mode is enabled
     function showOverlay() {
+        const state = window.__autoAcceptState;
+        const overlayMode = state.overlayMode || 'none';
+
+        // Skip if overlay is disabled
+        if (overlayMode === 'none') {
+            log('[Overlay] Overlay disabled by config (overlayMode=none)');
+            return;
+        }
+
         if (document.getElementById(OVERLAY_ID)) {
             log('[Overlay] Already exists, skipping creation');
             return;
         }
 
-        log('[Overlay] Creating overlay...');
-        const state = window.__autoAcceptState;
+        log(`[Overlay] Creating overlay (mode=${overlayMode})...`);
 
         // Inject styles
         if (!document.getElementById(STYLE_ID)) {
@@ -331,6 +339,36 @@
             style.textContent = STYLES;
             document.head.appendChild(style);
             log('[Overlay] Styles injected');
+        }
+
+        if (overlayMode === 'minimal') {
+            // Minimal mode: small bottom indicator
+            const overlay = document.createElement('div');
+            overlay.id = OVERLAY_ID;
+            overlay.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; height:28px; background:rgba(0,0,0,0.85); z-index:2147483647; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; transition:opacity 0.2s;';
+            const container = document.createElement('div');
+            container.id = 'aab-c';
+            container.style.cssText = 'font-size:11px; color:#888; font-family:system-ui,sans-serif;';
+            container.textContent = '⚡ Auto Accept: Background Mode Active';
+            overlay.appendChild(container);
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.style.opacity = '1');
+            log('[Overlay] Minimal overlay created');
+            return;
+        }
+
+        // Panel mode: only cover side panel, skip if not found
+        const ide = state.currentMode || 'cursor';
+        let panel = null;
+        if (ide === 'antigravity') {
+            panel = queryAll('.antigravity-agent-side-panel').find(p => p.offsetWidth > 50);
+        } else {
+            panel = queryAll('#workbench\\.parts\\.auxiliarybar').find(p => p.offsetWidth > 50);
+        }
+
+        if (!panel) {
+            log('[Overlay] Panel mode: No panel found, skipping overlay');
+            return;
         }
 
         // Create overlay
@@ -344,29 +382,14 @@
         overlay.appendChild(container);
 
         document.body.appendChild(overlay);
-        log('[Overlay] Overlay appended to body');
 
-        // Find panel and sync position
-        const ide = state.currentMode || 'cursor';
-        let panel = null;
-        if (ide === 'antigravity') {
-            panel = queryAll('.antigravity-agent-side-panel').find(p => p.offsetWidth > 50);
-        } else {
-            panel = queryAll('#workbench\\.parts\\.auxiliarybar').find(p => p.offsetWidth > 50);
-        }
-
-        if (panel) {
-            log(`[Overlay] Found panel for ${ide}, syncing position`);
-            const sync = () => {
-                const r = panel.getBoundingClientRect();
-                Object.assign(overlay.style, { top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' });
-            };
-            sync();
-            new ResizeObserver(sync).observe(panel);
-        } else {
-            log('[Overlay] No panel found, using fullscreen');
-            Object.assign(overlay.style, { top: '0', left: '0', width: '100%', height: '100%' });
-        }
+        log(`[Overlay] Found panel for ${ide}, syncing position`);
+        const sync = () => {
+            const r = panel.getBoundingClientRect();
+            Object.assign(overlay.style, { top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' });
+        };
+        sync();
+        new ResizeObserver(sync).observe(panel);
 
         // Add initial waiting message
         const waitingDiv = document.createElement('div');
@@ -1377,6 +1400,7 @@
             state.currentMode = ide;
             state.isBackgroundMode = isBG;
             state.autoAcceptFileEdits = config.autoAcceptFileEdits !== false; // Default to true
+            state.overlayMode = config.overlayMode || 'none';
             state.lastStartTime = Date.now();
             state.sessionID++;
             const sid = state.sessionID;

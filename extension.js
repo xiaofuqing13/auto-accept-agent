@@ -561,6 +561,7 @@ async function syncSessions() {
             // Read autoAcceptFileEdits config
             const config = vscode.workspace.getConfiguration('autoAccept');
             const autoAcceptFileEdits = config.get('autoAcceptFileEdits', true);
+            const overlayMode = config.get('overlayMode', 'none');
 
             await cdpHandler.start({
                 isPro,
@@ -568,7 +569,8 @@ async function syncSessions() {
                 pollInterval: pollFrequency,
                 ide: currentIDE,
                 bannedCommands: bannedCommands,
-                autoAcceptFileEdits: autoAcceptFileEdits
+                autoAcceptFileEdits: autoAcceptFileEdits,
+                overlayMode: overlayMode
             });
         } catch (err) {
             log(`CDP: Sync error: ${err.message}`);

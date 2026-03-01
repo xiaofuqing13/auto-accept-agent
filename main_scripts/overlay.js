@@ -59,13 +59,21 @@ function findTargetPanel(ide) {
 
 // Called ONCE when background mode is enabled
 export function showOverlay() {
+    const state = window.__autoAcceptState;
+    const overlayMode = state.overlayMode || 'none';
+
+    // Skip if overlay is disabled
+    if (overlayMode === 'none') {
+        console.log('[Overlay] Overlay disabled by config (overlayMode=none)');
+        return;
+    }
+
     if (document.getElementById(OVERLAY_ID)) {
         console.log('[Overlay] Already exists, skipping creation');
         return;
     }
 
-    console.log('[Overlay] Creating overlay...');
-    const state = window.__autoAcceptState;
+    console.log(`[Overlay] Creating overlay (mode=${overlayMode})...`);
 
     // Inject styles
     if (!document.getElementById(STYLE_ID)) {
@@ -75,11 +83,36 @@ export function showOverlay() {
         document.head.appendChild(style);
     }
 
+    if (overlayMode === 'minimal') {
+        // Minimal mode: small bottom indicator
+        const overlay = document.createElement('div');
+        overlay.id = OVERLAY_ID;
+        overlay.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; height:28px; background:rgba(0,0,0,0.85); z-index:2147483647; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; transition:opacity 0.2s;';
+        const container = document.createElement('div');
+        container.className = 'aab-container';
+        container.id = OVERLAY_ID + '-c';
+        container.style.cssText = 'font-size:11px; color:#888; font-family:system-ui,sans-serif;';
+        container.textContent = '\u26a1 Auto Accept: Background Mode Active';
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.style.opacity = '1');
+        return;
+    }
+
+    // Panel mode: only cover side panel, skip if not found
+    const ide = state.ide || state.currentMode || 'cursor';
+    const target = findTargetPanel(ide);
+
+    if (!target) {
+        console.log('[Overlay] Panel mode: No panel found, skipping overlay');
+        return;
+    }
+
     // Create overlay
     const overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
 
-    // Create container (pure DOM, no innerHTML)
+    // Create container
     const container = document.createElement('div');
     container.className = 'aab-container';
     container.id = OVERLAY_ID + '-c';
@@ -87,24 +120,12 @@ export function showOverlay() {
 
     document.body.appendChild(overlay);
 
-    // Find panel and sync
-    const ide = state.ide || state.currentMode || 'cursor';
-    const target = findTargetPanel(ide);
-
     const sync = () => {
-        const t = findTargetPanel(ide);
-        if (t) {
-            const r = t.getBoundingClientRect();
-            Object.assign(overlay.style, { top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' });
-        } else {
-            Object.assign(overlay.style, { top: '0', left: '0', width: '100%', height: '100%' });
-        }
+        const r = target.getBoundingClientRect();
+        Object.assign(overlay.style, { top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' });
     };
-
     sync();
-    if (target) {
-        new ResizeObserver(sync).observe(target);
-    }
+    new ResizeObserver(sync).observe(target);
 
     // Add waiting message
     const waitingDiv = document.createElement('div');
