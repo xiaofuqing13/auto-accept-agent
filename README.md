@@ -1,5 +1,8 @@
 # Auto Accept Agent
 
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black) ![VS Code](https://img.shields.io/badge/VS_Code-007ACC?logo=visualstudiocode&logoColor=white) ![License](https://img.shields.io/badge/License-MIT-green)
+
+
 [English](README_EN.md) | **中文**
 
 适用于 VS Code / Antigravity / Cursor 的扩展，通过 Chrome DevTools Protocol 与 IDE 前端通信，自动识别并点击 AI 代理发出的操作按钮（如运行、接受、重试等），减少人工干预。
