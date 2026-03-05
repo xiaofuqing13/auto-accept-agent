@@ -6,11 +6,14 @@ const path = require('path');
 const BASE_PORT = 9000;
 const PORT_RANGE = 3; // 9000 +/- 3
 
+const CLAIM_HEARTBEAT_TIMEOUT = 15000; // 15 seconds
+
 class CDPHandler {
     /**
      * @param {Function} logger - Logger function
      * @param {Object} options - Configuration options
      * @param {number|null} options.cdpPort - CDP port override (from VS Code settings)
+     * @param {string} options.instanceId - Unique instance ID for page claiming
      */
     constructor(logger = console.log, options = {}) {
         this.logger = logger;
@@ -18,6 +21,7 @@ class CDPHandler {
         this.isEnabled = false;
         this.msgId = 1;
         this.configCdpPort = options.cdpPort || null;
+        this.instanceId = options.instanceId || Math.random().toString(36).substring(7);
         this.targetPort = this._detectPort();
     }
 
@@ -268,7 +272,8 @@ for ($i = 0; $i -lt 10; $i++) {
     }
 
     /**
-     * Start/maintain the CDP connection and injection loop
+     * Start/maintain the CDP connection and injection loop.
+     * Each instance only manages pages it has claimed via instanceId.
      */
     async start(config) {
         if (!this.targetPort) {
@@ -277,7 +282,7 @@ for ($i = 0; $i -lt 10; $i++) {
         }
 
         this.isEnabled = true;
-        this.log(`Start: Connecting to port ${this.targetPort}...`);
+        this.log(`Start: Connecting to port ${this.targetPort} (instance: ${this.instanceId})...`);
 
         try {
             const pages = await this._getPages(this.targetPort);
@@ -286,6 +291,16 @@ for ($i = 0; $i -lt 10; $i++) {
                 if (!this.connections.has(id)) {
                     await this._connect(id, page.webSocketDebuggerUrl);
                 }
+
+                // Page claiming: skip pages owned by other active instances
+                const claimedByOther = await this._isPageClaimedByOther(id);
+                if (claimedByOther) {
+                    this.log(`Start: Page ${id} claimed by another instance, skipping.`);
+                    continue;
+                }
+
+                // Claim this page and update heartbeat
+                await this._claimPage(id);
                 await this._inject(id, config);
             }
         } catch (e) {
@@ -299,7 +314,8 @@ for ($i = 0; $i -lt 10; $i++) {
         this.isEnabled = false;
         for (const [id, conn] of this.connections) {
             try {
-                await this._evaluate(id, 'if(window.__autoAcceptStop) window.__autoAcceptStop()');
+                // Release claim and stop
+                await this._evaluate(id, 'window.__autoAcceptClaimedBy = null; if(window.__autoAcceptStop) window.__autoAcceptStop()');
                 conn.ws.close();
             } catch (e) { }
         }
@@ -383,6 +399,35 @@ for ($i = 0; $i -lt 10; $i++) {
                 params: { expression, userGesture: true, awaitPromise: true }
             }));
         });
+    }
+
+    /**
+     * Check if a page is claimed by another instance (with valid heartbeat)
+     */
+    async _isPageClaimedByOther(id) {
+        try {
+            const res = await this._evaluate(id, 'JSON.stringify(window.__autoAcceptClaimedBy || null)');
+            if (res?.result?.value && res.result.value !== 'null') {
+                const claim = JSON.parse(res.result.value);
+                if (claim && claim.id !== this.instanceId) {
+                    // Check heartbeat freshness
+                    if (claim.heartbeat && (Date.now() - claim.heartbeat) < CLAIM_HEARTBEAT_TIMEOUT) {
+                        return true; // Actively claimed by another instance
+                    }
+                    this.log(`Page ${id}: stale claim from ${claim.id}, taking over.`);
+                }
+            }
+        } catch (e) { }
+        return false;
+    }
+
+    /**
+     * Claim a page for this instance with heartbeat timestamp
+     */
+    async _claimPage(id) {
+        try {
+            await this._evaluate(id, `window.__autoAcceptClaimedBy = ${JSON.stringify({ id: this.instanceId, heartbeat: Date.now() })}`);
+        } catch (e) { }
     }
 
     async getStats() {

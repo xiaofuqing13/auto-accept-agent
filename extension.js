@@ -170,8 +170,9 @@ async function activate(context) {
             pollFrequency = 300; // Enforce fast polling (0.3s) for free users
         }
 
-        // Load background mode state
-        backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
+        // Background mode is per-window (runtime only, not shared via globalState)
+        // Each window starts with background mode OFF
+        backgroundModeEnabled = false;
 
         // Load banned commands list (default: common dangerous patterns)
         const defaultBannedCommands = [
@@ -246,7 +247,7 @@ async function activate(context) {
             const { CDPHandler } = require('./main_scripts/cdp-handler');
             const { Relauncher } = require('./main_scripts/relauncher');
 
-            cdpHandler = new CDPHandler(log, { cdpPort: configCdpPort });
+            cdpHandler = new CDPHandler(log, { cdpPort: configCdpPort, instanceId: INSTANCE_ID });
             relauncher = new Relauncher(log, context);
             log(`CDP handlers initialized for ${currentIDE}.`);
         } catch (err) {
@@ -540,12 +541,10 @@ async function handleBackgroundToggle(context) {
 
         // Enable it
         backgroundModeEnabled = true;
-        await context.globalState.update(BACKGROUND_MODE_KEY, true);
         log('Background mode enabled');
     } else {
         // Simple toggle
         backgroundModeEnabled = !backgroundModeEnabled;
-        await context.globalState.update(BACKGROUND_MODE_KEY, backgroundModeEnabled);
         log(`Background mode toggled: ${backgroundModeEnabled}`);
 
         // Hide overlay in background if being disabled
@@ -600,33 +599,6 @@ async function startPolling() {
     // Polling now primarily handles the Instance Lock and ensures CDP is active
     pollTimer = setInterval(async () => {
         if (!isRunning) return;
-
-        // Check for instance locking - only the first extension instance should control CDP
-        const lockKey = `${currentIDE.toLowerCase()}-instance-lock`;
-        const activeInstance = globalContext.globalState.get(lockKey);
-        const myId = globalContext.extension.id;
-
-        if (activeInstance && activeInstance !== myId) {
-            const lastPing = globalContext.globalState.get(`${lockKey}-ping`);
-            if (lastPing && (Date.now() - lastPing) < 15000) {
-                if (!isLockedOut) {
-                    log(`CDP Control: Locked by another instance (${activeInstance}). Standby mode.`);
-                    isLockedOut = true;
-                    updateStatusBar();
-                }
-                return;
-            }
-        }
-
-        // We are the leader or lock is dead
-        globalContext.globalState.update(lockKey, myId);
-        globalContext.globalState.update(`${lockKey}-ping`, Date.now());
-
-        if (isLockedOut) {
-            log('CDP Control: Lock acquired. Resuming control.');
-            isLockedOut = false;
-            updateStatusBar();
-        }
 
         await syncSessions();
     }, 5000);

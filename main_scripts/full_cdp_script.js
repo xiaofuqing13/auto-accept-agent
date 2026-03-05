@@ -1470,6 +1470,7 @@
 
     window.__autoAcceptStop = function () {
         window.__autoAcceptState.isRunning = false;
+        window.__autoAcceptClaimedBy = null; // Release page claim
         hideOverlay();
         log("Agent Stopped.");
     };
