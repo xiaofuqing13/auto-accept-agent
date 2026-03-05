@@ -154,7 +154,7 @@ async function activate(context) {
 
         // Read settings from VS Code configuration
         const config = vscode.workspace.getConfiguration('autoAccept');
-        const localVipOverride = config.get('localVipOverride', false);
+        const localVipOverride = config.get('localVipOverride', true);
         const configCdpPort = config.get('cdpPort', null);
 
         // localVipOverride: 本地强制 VIP 模式（测试用）
