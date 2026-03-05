@@ -499,58 +499,12 @@ async function handleBannedCommandsUpdate(context, commands) {
 async function handleBackgroundToggle(context) {
     log('Background toggle clicked');
 
-    // Free tier: Show Pro message
+    backgroundModeEnabled = !backgroundModeEnabled;
+    log(`Background mode toggled: ${backgroundModeEnabled}`);
 
-    if (!isPro) {
-        vscode.window.showInformationMessage(
-            Loc.t('Background Mode is a Pro feature.'),
-            Loc.t('Learn More')
-        ).then(choice => {
-            if (choice === Loc.t('Learn More')) {
-                const panel = getSettingsPanel();
-                if (panel) panel.createOrShow(context.extensionUri, context);
-            }
-        });
-        return;
-    }
-
-    // Pro tier: Check if we should show first-time dialog
-    const dontShowAgain = context.globalState.get(BACKGROUND_DONT_SHOW_KEY, false);
-
-    if (!dontShowAgain && !backgroundModeEnabled) {
-        // First-time enabling: Show confirmation dialog
-        const message = Loc.t('Background Mode allows Auto Accept to work across ALL browser tabs simultaneously, even when they\'re not focused. This is a Pro feature.');
-        const enable = Loc.t('Enable');
-        const dontShow = Loc.t('Don\'t Show Again & Enable');
-        const choice = await vscode.window.showInformationMessage(
-            message,
-            { modal: true },
-            enable,
-            dontShow
-        );
-
-        if (choice === 'Cancel' || !choice) {
-            log('Background mode cancelled by user');
-            return;
-        }
-
-        if (choice === "Don't Show Again & Enable") {
-            await context.globalState.update(BACKGROUND_DONT_SHOW_KEY, true);
-            log('Background mode: Dont show again set');
-        }
-
-        // Enable it
-        backgroundModeEnabled = true;
-        log('Background mode enabled');
-    } else {
-        // Simple toggle
-        backgroundModeEnabled = !backgroundModeEnabled;
-        log(`Background mode toggled: ${backgroundModeEnabled}`);
-
-        // Hide overlay in background if being disabled
-        if (!backgroundModeEnabled && cdpHandler) {
-            cdpHandler.hideBackgroundOverlay().catch(() => { });
-        }
+    // Hide overlay if being disabled
+    if (!backgroundModeEnabled && cdpHandler) {
+        cdpHandler.hideBackgroundOverlay().catch(() => { });
     }
 
     // Update UI immediately
